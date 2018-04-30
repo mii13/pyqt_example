@@ -1,0 +1,12 @@
+*.pyc
+.idea/
+__pycache__
+.cache
+*.sqlite3
+*.sqlite
+*.db
+
+
+# project specific
+.env
+env/
