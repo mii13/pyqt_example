@@ -10,3 +10,4 @@ __pycache__
 # project specific
 .env
 env/
+env2/

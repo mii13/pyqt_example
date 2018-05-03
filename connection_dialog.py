@@ -13,7 +13,6 @@ class ConnectionDialog(QDialog):
         layout = QVBoxLayout(self)
         layout.addWidget(connection_label)
         layout.addWidget(self.connection_edit)
-                # OK and Cancel buttons
         buttons = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
             Qt.Horizontal, self)
