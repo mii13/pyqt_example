@@ -1,7 +1,56 @@
+import sqlparse
 try:
     import urlparse
 except ImportError:
     import urllib.parse as urlparse
+
+"sqlite://Northwind_small.sqlite"
+"select * from 'order' o1 join 'order' o2 on o1.Id != o2.Id join 'order' o3 on o2.Id != o3.Id;"
+
+
+class Query:
+    MAX_ROW = 10000
+    """
+    The class is parse sql query and do the query in the database
+    """
+    def __init__(self, connection, query):
+        self.cursor = connection.cursor()
+        self.connection = connection
+        self.query = sqlparse.parse(query)[0]  # this version do only one query
+
+    def do(self):
+        """
+        Do query and return result
+        """
+        try:
+            self.cursor.execute(str(self.query))
+            self.connection.commit()
+            if "SELECT" == self.query.get_type().upper():
+                header = [description[0] for description in self.cursor.description]
+                return header, self
+            else:
+                return ["result", ], [("ok",), ]
+        except Exception as e:
+            return ["error", ], [(str(e),), ]
+
+    def __iter__(self):
+        row = 0
+        size = 1000
+        while True:
+            if row*size >= self.MAX_ROW:
+                raise MemoryError("Result is very big; Use limit/ofset in query for pagination")
+            row += 1
+            results = self.cursor.fetchmany(size)
+            if not results:
+                break
+            for result in results:
+                yield result
+
+    def __del__(self):
+        try:
+            self.cursor.close()
+        except Exception:
+            pass
 
 
 class _Base:
@@ -12,23 +61,11 @@ class _Base:
     def __del__(self):
         try:
             self.connection.close()
-        except self.db_api_driver.DatabaseError:
+        except (self.db_api_driver.DatabaseError, AttributeError):
             pass
 
     def do_query(self, query):
-        cursor = self.connection.cursor()
-        try:
-            cursor.execute(query)
-            self.connection.commit()
-            if "SELECT" in query.upper():
-                header = [description[0] for description in cursor.description]
-                return header, cursor.fetchall()
-            else:
-                return ["result", ], [("ok",), ]
-        except self.db_api_driver.DatabaseError as e:
-            return ["error", ], [(str(e),), ]
-        finally:
-            cursor.close()
+        return Query(self.connection, query).do()
 
     def connect(self):
         self.connection = self.get_connection()
@@ -44,7 +81,7 @@ class Sqlite(_Base):
         self. db = db
 
     def get_connection(self):
-        return self.db_api_driver.connect(self.db)
+        return self.db_api_driver.connect(self.db, check_same_thread=False)
 
     @property
     def url(self):
@@ -109,7 +146,7 @@ def parse(connection_string):
     url = urlparse.urlparse(connection_string)
     kwargs = {}
     if url.scheme == 'sqlite':
-        kwargs["db"] = url.hostname or ":memory:"
+        kwargs["db"] = url.path or url.netloc or ":memory:"
     else:
         kwargs["hostname"] = url.hostname
         kwargs["user"] = url.username
