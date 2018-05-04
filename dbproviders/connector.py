@@ -1,3 +1,5 @@
+import os
+import re
 import sqlparse
 try:
     import urlparse
@@ -155,11 +157,23 @@ urlparse.uses_netloc.append('pgsql')
 urlparse.uses_netloc.append('mysql')
 
 
+def parse_sqlite_filename(path):
+    filename = os.path.basename(path)
+    if re.findall(r'[^A-Za-z0-9_\-\.\\]', filename):
+        raise NameError("Bad sqlite database name")
+    extension = os.path.splitext(filename)
+    if extension not in ("db", "sdb", "sqlite", "db3", "s3db", "sqlite3", "sl3", "db2", "s2db", "sqlite2", "sl2"):
+        raise NameError("Bad sqlite database extension")
+
+
 def parse(connection_string):
     url = urlparse.urlparse(connection_string)
     kwargs = {}
     if url.scheme == 'sqlite':
-        kwargs["db"] = url.path or url.netloc or ":memory:"
+        path = url.path or url.netloc or ""
+        if path:
+            parse_sqlite_filename(path)
+        kwargs["db"] = path or ":memory:"
     else:
         kwargs["hostname"] = url.hostname
         kwargs["user"] = url.username
