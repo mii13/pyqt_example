@@ -9,10 +9,11 @@ except ImportError:
 
 
 class Query:
-    MAX_ROW = 10000
     """
     The class is parse sql query and do the query in the database
     """
+    MAX_ROW = 10000
+
     def __init__(self, connection, query):
         self.cursor = connection.cursor()
         self.connection = connection
@@ -54,6 +55,9 @@ class Query:
 
 
 class _Base:
+    """
+       interface for query execution
+    """
     def __init__(self, driver):
         self.db_api_driver = driver
         self.connection = None
@@ -75,6 +79,9 @@ class _Base:
 
 
 class Sqlite(_Base):
+    """
+        Namespace for sqlite connection
+        """
     def __init__(self, db):
         import sqlite3
         super().__init__(sqlite3)
@@ -89,6 +96,9 @@ class Sqlite(_Base):
 
 
 class Mysql(_Base):
+    """
+    Namespace for mysql connection
+    """
     def __init__(self, hostname, port, user, password, db):
         import pymysql
         super().__init__(pymysql)
@@ -107,6 +117,9 @@ class Mysql(_Base):
 
 
 class Pgsql(_Base):
+    """
+    Namespace for postgress connection
+    """
     def __init__(self, hostname, port, user, password, db):
         import psycopg2
         super().__init__(psycopg2)
