@@ -1,3 +1,4 @@
+import time
 from PyQt5 import QtWidgets, QtGui, QtCore
 from dbproviders import get_driver
 from connection_dialog import ConnectionDialog
@@ -98,6 +99,8 @@ class QueryWindow(QtWidgets.QMainWindow):
         if reply == QtWidgets.QMessageBox.Yes:
             event.accept()
             if self.driver:
+                self.query_stop_event.set()
+                time.sleep(0.5)
                 self._disconnect_from_db()
         else:
             event.ignore()
