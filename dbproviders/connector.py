@@ -6,9 +6,6 @@ try:
 except ImportError:
     import urllib.parse as urlparse
 
-"sqlite://Northwind_small.sqlite"
-"select * from 'order' o1 join 'order' o2 on o1.Id != o2.Id join 'order' o3 on o2.Id != o3.Id;"
-
 
 class Query:
     """
@@ -34,6 +31,7 @@ class Query:
             else:
                 return ["result", ], [("ok",), ]
         except Exception as e:
+            self.connection.rollback()
             return ["error", ], [(str(e),), ]
 
     def __iter__(self):
@@ -67,7 +65,7 @@ class _Base:
     def __del__(self):
         try:
             self.connection.close()
-        except (self.db_api_driver.DatabaseError, AttributeError):
+        except Exception:
             pass
 
     def do_query(self, query):
@@ -111,7 +109,8 @@ class Mysql(_Base):
         self.password = password
 
     def get_connection(self):
-        return self.db_api_driver.connect(self.hostname, self.user, self.password, self.db, self.port)
+        return self.db_api_driver.connect(host=self.hostname, user=self.user, password=self.password,
+                                          database=self.db, port=self.port)
 
     @property
     def url(self):
@@ -161,7 +160,7 @@ def parse_sqlite_filename(path):
     filename = os.path.basename(path)
     if re.findall(r'[^A-Za-z0-9_\-\.\\]', filename):
         raise NameError("Bad sqlite database name")
-    extension = os.path.splitext(filename)
+    extension = os.path.splitext(filename)[1].lstrip(".")
     if extension not in ("db", "sdb", "sqlite", "db3", "s3db", "sqlite3", "sl3", "db2", "s2db", "sqlite2", "sl2"):
         raise NameError("Bad sqlite database extension")
 
@@ -170,7 +169,7 @@ def parse(connection_string):
     url = urlparse.urlparse(connection_string)
     kwargs = {}
     if url.scheme == 'sqlite':
-        path = url.path or url.netloc or ""
+        path = url.path[1:] or url.netloc or ""
         if path:
             parse_sqlite_filename(path)
         kwargs["db"] = path or ":memory:"

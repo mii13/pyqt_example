@@ -114,8 +114,10 @@ class QueryWindow(QtWidgets.QMainWindow):
         self.queryAction.setEnabled(False)
         self.disconnectAction.setEnabled(False)
         self.status_query_label.setText("Do query...")
+
         self.query_stop_event.clear()
         self._do_query()
+
         self.status_query_label.setText("Ready")
         self.stop_queryAction.setEnabled(False)
         self.queryAction.setEnabled(True)
