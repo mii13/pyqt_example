@@ -28,8 +28,7 @@ class Query:
             if "SELECT" == self.query.get_type().upper():
                 header = [description[0] for description in self.cursor.description]
                 return header, self
-            else:
-                return ["result", ], [("ok",), ]
+            return ["result", ], [("ok",), ]
         except Exception as e:
             self.connection.rollback()
             return ["error", ], [(str(e),), ]
