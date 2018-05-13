@@ -7,56 +7,116 @@ except ImportError:
     import urllib.parse as urlparse
 
 
+class DbProviderException(Exception):
+    pass
+
+
+class Pagination:
+    """ Class for pagination sql query result"""
+    MAX_ROW = 1000
+
+    def __init__(self, query):
+        self.query = query
+        self._data = []
+        self.last = False
+        self.page = 0
+
+    def __len__(self):
+        return len(self._data)
+
+    @property
+    def data(self):
+        return self._data
+
+    @property
+    def has_prev(self):
+        """True if a previous page exists"""
+        return self.page > 1
+
+    @property
+    def has_next(self):
+        """True if a next page exists."""
+        return self.last
+
+    def next_page(self):
+        """ get next page """
+        self._data = self.query.fetch_data(Pagination.MAX_ROW)
+        self.page += 1
+        if not self._data:
+            self._data = []
+            self.last = True
+        if len(self._data) == Pagination.MAX_ROW:
+            self.last = True
+
+    def prev_page(self):
+        """ get prev page """
+        if not self.has_prev:
+            raise DbProviderException("prev page not exist")
+        # it is very bad solution
+        self.query.execute_query()
+        self.page -= 2
+        self.query.scroll(Pagination.MAX_ROW*self.page)
+        self.next_page()
+
+
 class Query:
     """
     The class is parse sql query and do the query in the database
     """
-    MAX_ROW = 10000
 
-    def __init__(self, connection, query):
-        self.cursor = connection.cursor()
-        self.connection = connection
-        self.query = sqlparse.parse(query)[0]  # this version do only one query
-
-    def do(self):
-        """
-        Do query and return result
-        """
+    def __init__(self, db_driver, query):
+        self.cursor = None
+        self.db_driver = db_driver
+        self._result = [("ok",), ]
         try:
-            self.cursor.execute(str(self.query))
-            self.connection.commit()
-            if "SELECT" == self.query.get_type().upper():
-                header = [description[0] for description in self.cursor.description]
-                return header, self
-            return ["result", ], [("ok",), ]
+            self.query = sqlparse.parse(query)[0]  # this version do only one query
+        except IndexError:
+            raise DbProviderException("Bad query")
+
+    @property
+    def keys(self):
+        """ return header """
+        if "SELECT" == self.query.get_type().upper():
+            return [description[0] for description in self.cursor.description]
+        return ["result", ]
+
+    def scroll(self, value):
+        self.db_driver.scroll(self.cursor, value)
+
+    def fetch_data(self, size):
+        if "SELECT" == self.query.get_type().upper():
+            return self.cursor.fetchmany(size)
+        else:
+            return self._result
+
+    def execute_query(self):
+        """ Do query """
+        self._close_cursor()
+        try:
+            self.cursor = self.db_driver.do_query(str(self.query))
         except Exception as e:
-            self.connection.rollback()
-            return ["error", ], [(str(e),), ]
+            self.db_driver.connection.rollback()
+            self._result = [(str(e),), ]
 
-    def __iter__(self):
-        row = 0
-        size = 1000
-        while True:
-            if row*size >= self.MAX_ROW:
-                raise MemoryError("Result is very big; Use limit/ofset in query for pagination")
-            row += 1
-            results = self.cursor.fetchmany(size)
-            if not results:
-                break
-            for result in results:
-                yield result
-
-    def __del__(self):
+    def _close_cursor(self):
         try:
             self.cursor.close()
         except Exception:
             pass
+
+    def __del__(self):
+        self._close_cursor()
+
+    def paginate(self):
+        self.execute_query()
+        return Pagination(self)
 
 
 class _Base:
     """
        interface for query execution
     """
+
     def __init__(self, driver):
         self.db_api_driver = driver
         self.connection = None
@@ -68,7 +128,27 @@ class _Base:
             pass
 
     def do_query(self, query):
-        return Query(self.connection, query).do()
+        cursor = self.connection.cursor()
+        cursor.execute(query)
+        self.connection.commit()
+        # self.connection.rollback()
+        # return ["error", ], [(str(e),), ]
+        return cursor
+
+    @staticmethod
+    def scroll(cursor, value):
+        if not value:
+            return
+        max_row = 10000  # некое предельное число, что бы можно было листать без учерба к опер. памяти
+        if value > max_row:
+            counter = value // max_row
+            appendix = value % max_row
+            if appendix:
+                cursor.fetchmany(appendix)
+            for _ in range(counter):
+                cursor.fetchmany(max_row)  # небольшое утечка памяти, надо разобраться
+        else:
+            cursor.fetchmany(value)
 
     def connect(self):
         self.connection = self.get_connection()
@@ -134,6 +214,10 @@ class Pgsql(_Base):
                "password='{password}'".format(db=self.db, user=self.user, port=self.port,
                                               hostname=self.hostname, password=self.password))
         return self.db_api_driver.connect(dsn)
+
+    @staticmethod
+    def scroll(cursor, value):
+        cursor.scroll(value)
 
     @property
     def url(self):

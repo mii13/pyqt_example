@@ -1,4 +1,4 @@
-from .connector import get_driver
+from .connector import get_driver, Query
 
 
-__all__ = ("get_driver", )
+__all__ = (get_driver, Query)
