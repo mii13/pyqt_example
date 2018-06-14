@@ -1,6 +1,8 @@
 import sqlite3
+from .base_api import Base
 
-class Sqlite(_Base):
+
+class Sqlite(Base):
     """
         Namespace for sqlite connection
         """

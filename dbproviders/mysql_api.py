@@ -1,7 +1,8 @@
 import pymysql
+from .base_api import Base
 
 
-class Mysql(_Base):
+class Mysql(Base):
     """
     Namespace for mysql connection
     """

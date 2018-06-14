@@ -13,11 +13,11 @@ def import_class(module, obj):
 
 
 _DRIVER_MAP = {
-    'sqlite': "sqlite_api.Sqlite",
-    'postgres': "postgres_api.Pgsql",
-    'pgsql': "postgres_api.Pgsql",
-    'postgresql': "postgres_api.Pgsql",
-    'mysql': "mysql_api.Mysql",
+    'sqlite': "dbproviders.sqlite_api.Sqlite",
+    'postgres': "dbproviders.postgres_api.Pgsql",
+    'pgsql': "dbproviders.postgres_api.Pgsql",
+    'postgresql': "dbproviders.postgres_api.Pgsql",
+    'mysql': "dbproviders.mysql_api.Mysql",
 }
 
 urlparse.uses_netloc.append('sqlite')
@@ -58,6 +58,6 @@ def get_driver(connection_string):
     driver, kwargs = parse(connection_string)
     if driver not in _DRIVER_MAP.keys():
         raise KeyError("unexpected db: {}".format(driver))
-
-    cl = import_class(*_DRIVER_MAP[driver].split("."))
+    mod = _DRIVER_MAP[driver].split(".")
+    cl = import_class(".".join(mod[:-1]), mod[-1])
     return cl(**kwargs)

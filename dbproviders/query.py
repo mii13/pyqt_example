@@ -1,8 +1,5 @@
 import sqlparse
-
-
-class DbProviderException(Exception):
-    pass
+from .exceptions import DbProviderException
 
 
 class Query:

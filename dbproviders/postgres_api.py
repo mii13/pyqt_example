@@ -1,7 +1,8 @@
 import psycopg2
+from .base_api import Base
 
 
-class Pgsql(_Base):
+class Pgsql(Base):
     """
     Namespace for postgress connection
     """

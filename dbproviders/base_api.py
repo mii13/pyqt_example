@@ -1,4 +1,4 @@
-class _Base:
+class Base:
     """
        interface for query execution
     """
