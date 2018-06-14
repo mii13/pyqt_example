@@ -1,6 +1,6 @@
 import sys
 from PyQt5.QtWidgets import QApplication
-from mainwindow import QueryWindow
+from qt_query.mainwindow import QueryWindow
 
 
 if __name__ == '__main__':

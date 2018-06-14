@@ -1,8 +1,8 @@
 import time
 from PyQt5 import QtWidgets, QtGui, QtCore
-from dbproviders import get_driver, Query
-from connection_dialog import ConnectionDialog
-from table_model import QueryResultTableModel
+from .dbproviders import get_driver, Query
+from .connection_dialog import ConnectionDialog
+from .table_model import QueryResultTableModel
 
 
 class QueryWindow(QtWidgets.QMainWindow):

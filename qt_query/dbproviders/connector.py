@@ -13,11 +13,11 @@ def import_class(module, obj):
 
 
 _DRIVER_MAP = {
-    'sqlite': "dbproviders.sqlite_api.Sqlite",
-    'postgres': "dbproviders.postgres_api.Pgsql",
-    'pgsql': "dbproviders.postgres_api.Pgsql",
-    'postgresql': "dbproviders.postgres_api.Pgsql",
-    'mysql': "dbproviders.mysql_api.Mysql",
+    'sqlite': "qt_query.dbproviders.sqlite_api.Sqlite",
+    'postgres': "qt_query.dbproviders.postgres_api.Pgsql",
+    'pgsql': "qt_query.dbproviders.postgres_api.Pgsql",
+    'postgresql': "qt_query.dbproviders.postgres_api.Pgsql",
+    'mysql': "qt_query.dbproviders.mysql_api.Mysql",
 }
 
 urlparse.uses_netloc.append('sqlite')
