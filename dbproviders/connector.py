@@ -67,7 +67,7 @@ class Query:
     def __init__(self, db_driver, query):
         self.cursor = None
         self.db_driver = db_driver
-        self._result = [("ok",), ]
+        self._result = []
         try:
             self.query = sqlparse.parse(query)[0]  # this version do only one query
         except IndexError:
@@ -76,7 +76,7 @@ class Query:
     @property
     def keys(self):
         """ return header """
-        if "SELECT" == self.query.get_type().upper():
+        if "SELECT" == self.query.get_type().upper() and not self._result:
             return [description[0] for description in self.cursor.description]
         return ["result", ]
 
@@ -84,10 +84,11 @@ class Query:
         self.db_driver.scroll(self.cursor, value)
 
     def fetch_data(self, size):
-        if "SELECT" == self.query.get_type().upper():
+        if "SELECT" == self.query.get_type().upper() and not self._result:
             return self.cursor.fetchmany(size)
-        else:
-            return self._result
+        elif not self._result:
+            return [("ok", ), ]
+        return self._result
 
     def execute_query(self):
         """ Do query """

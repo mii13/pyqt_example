@@ -137,11 +137,12 @@ class QueryWindow(QtWidgets.QMainWindow):
         self.disconnectAction.setEnabled(True)
 
     def _do_query(self):
-        try:
+        # try:
+        if 1:
             self._table_model.set_query(Query(self.driver, self.query_edit.toPlainText().strip()))
             self._table_model.next_page()
-        except Exception as e:
-            QtWidgets.QMessageBox.critical(self, "query error ", str(e))
+        # except Exception as e:
+        #     QtWidgets.QMessageBox.critical(self, "query error ", str(e))
 
     @QtCore.pyqtSlot()
     def connect_to_db(self):
