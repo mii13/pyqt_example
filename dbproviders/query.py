@@ -10,7 +10,7 @@ class Query:
     def __init__(self, db_driver, query):
         self.cursor = None
         self.db_driver = db_driver
-        self._result = []
+        self._error = ""
         try:
             self.query = sqlparse.parse(query)[0]  # this version do only one query
         except IndexError:
@@ -19,33 +19,39 @@ class Query:
     @property
     def keys(self):
         """ return header """
-        if "SELECT" == self.query.get_type().upper() and not self._result:
-            return [description[0] for description in self.cursor.description]
-        return ["result", ]
+        header = ["result", ]
+        try:
+            header = [description[0] for description in self.cursor.description]
+        except AttributeError:
+            header = ["error", ]
+        except TypeError:
+            pass  # update, insert statements description is None
+        return header
 
     def scroll(self, value):
         self.db_driver.scroll(self.cursor, value)
 
     def fetch_data(self, size):
-        if "SELECT" == self.query.get_type().upper() and not self._result:
+        if self._error:
+            return [(self._error,), ]
+        elif "SELECT" == self.query.get_type().upper():
             return self.cursor.fetchmany(size)
-        elif not self._result:
-            return [("ok", ), ]
-        return self._result
+
+        return [("ok", ), ]
 
     def execute_query(self):
         """ Do query """
         self._close_cursor()
         try:
             self.cursor = self.db_driver.do_query(str(self.query))
-        except Exception as e:
+        except self.db_driver.db_api_driver.DatabaseError as e:
             self.db_driver.connection.rollback()
-            self._result = [(str(e),), ]
+            self._error = str(e)
 
     def _close_cursor(self):
         try:
             self.cursor.close()
-        except Exception:
+        except (AttributeError, self.db_driver.db_api_driver.DatabaseError):
             pass
 
     def __del__(self):
